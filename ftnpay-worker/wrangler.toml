@@ -1,0 +1,16 @@
+name = "ftnpay-worker"
+main = "src/index.ts"
+compatibility_date = "2024-08-01"
+
+account_id = "cf3edee37551314c23bfb2bc2f2a7db5"
+workers_dev = true
+
+# 如果要綁定正式域名，打開下面這行，把 route 改成你的實際域名
+routes = [
+   { pattern = "pay.ftnpay.com/*", zone_name = "ftnpay.com" }
+ ]
+
+# KV 綁定
+kv_namespaces = [
+  { binding = "ORDERS_KV", id = "a26264df40254bd8879786269fa1d6ec" }
+]
