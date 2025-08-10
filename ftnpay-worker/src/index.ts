@@ -1,39 +1,23 @@
-import ipDetection from "./ipDetection";
+import { serve } from "std/http/server.ts";
+import React from "react";
+import { renderToString } from "react-dom/server";
+import PayPage from "./pay";
 
-export interface Env {
-  API_BASE_URL: string;
-}
+serve((req) => {
+  const html = `
+    <!DOCTYPE html>
+    <html lang="zh">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <title>支付页面</title>
+    </head>
+    <body style="background-color:#f7f7f7; margin:0; padding:20px;">
+      <div id="root">${renderToString(React.createElement(PayPage))}</div>
+    </body>
+    </html>
+  `;
+  return new Response(html, { headers: { "content-type": "text/html" } });
+});
 
-export default {
-  async fetch(req: Request, env: Env, ctx: ExecutionContext) {
-    const url = new URL(req.url);
 
-    // 根路径返回欢迎页面
-    if (url.pathname === "/") {
-      return new Response("<h1>欢迎使用智汇TTH</h1>", {
-        headers: { "Content-Type": "text/html; charset=utf-8" },
-      });
-    }
-
-    // IP地址检测API
-    if (url.pathname === "/api/ip-country") {
-      const country = ipDetection(req);
-      return new Response(JSON.stringify({ country }), {
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-
-    // 代理其他API请求
-    if (url.pathname.startsWith("/api/")) {
-      const target = env.API_BASE_URL + url.pathname.replace("/api", "");
-      return fetch(target, {
-        method: req.method,
-        headers: req.headers,
-        body: req.method !== "GET" ? await req.blob() : undefined,
-      });
-    }
-
-    // 其它路径404
-    return new Response("Not Found", { status: 404 });
-  },
-};

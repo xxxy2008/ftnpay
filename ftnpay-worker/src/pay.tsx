@@ -1,123 +1,94 @@
-// pay.ts
-import { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 
-// 國際化文本
-const i18n = {
-  zh: {
-    title: "选择支付方式",
-    wechatTip: "请在系统浏览器中打开以完成支付",
-    bank: "🏦 银行转账",
-    alipay: "💰 支付宝",
-    wechat: "💬 微信支付",
-    stripe: "💳 Stripe",
-    tth: "⚡ 智汇付 TTH",
-    back: "返回",
-  },
-  en: {
-    title: "Choose Payment Method",
-    wechatTip: "Please open in system browser to complete payment",
-    bank: "🏦 Bank Transfer",
-    alipay: "💰 Alipay",
-    wechat: "💬 WeChat Pay",
-    stripe: "💳 Stripe",
-    tth: "⚡ TTH Pay",
-    back: "Back",
-  },
-};
-
-// 工具方法
-const getQueryParam = (name: string) => {
-  const url = new URL(window.location.href);
-  return url.searchParams.get(name) || "";
-};
-
-const isWeChatBrowser = () => /micromessenger/i.test(navigator.userAgent);
-
-// UI 按鈕組件
-function PayButton({ label, onClick }: { label: string; onClick: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      className="w-full py-3 px-4 text-lg font-semibold bg-white border border-gray-300 rounded-xl shadow hover:shadow-lg transition"
-    >
-      {label}
-    </button>
-  );
-}
+const BUTTON_COLOR = "#1E90FF"; // 统一按钮颜色（之前给的色号）
+const API_BASE_URL = "https://pay.ftnpay.com/api"; // 你的 API 基础地址
 
 export default function PayPage() {
-  const [lang, setLang] = useState<"zh" | "en">("zh");
-  const [country, setCountry] = useState("CN");
-  const [orderId, setOrderId] = useState("");
-  const [wechatEnv, setWechatEnv] = useState(false);
+  const [countryCode, setCountryCode] = useState("CN");
+  const [countryName, setCountryName] = useState("中国");
+  const [amount, setAmount] = useState("100");
+  const [lang, setLang] = useState("zh");
 
+  const labels = {
+    zh: {
+      title: "⚡ 选择支付方式",
+      subtitle: "智汇TTH · 安全快速",
+      amount: "付款金额",
+      bank: "🏦 银行转账",
+      alipay: "💰 支付宝",
+      wechat: "💬 微信",
+      stripe: "💳 Stripe",
+      tth: "⚡ 智汇付 TTH",
+    },
+    en: {
+      title: "⚡ Select Payment Method",
+      subtitle: "TTH · Safe & Fast",
+      amount: "Amount",
+      bank: "🏦 Bank Transfer",
+      alipay: "💰 Alipay",
+      wechat: "💬 WeChat Pay",
+      stripe: "💳 Stripe",
+      tth: "⚡ TTH Pay",
+    },
+  };
+
+  // 获取 URL 参数
   useEffect(() => {
-    // 讀取 URL 參數
-    const urlLang = getQueryParam("lang").toLowerCase();
-    if (urlLang === "en") setLang("en");
+    const params = new URLSearchParams(window.location.search);
+    const amt = params.get("amount");
+    const langParam = params.get("lang");
+    const countryParam = params.get("country");
+    const nameParam = params.get("countryName");
 
-    const urlCountry = getQueryParam("country");
-    if (urlCountry) setCountry(urlCountry.toUpperCase());
+    if (amt) setAmount(amt);
+    if (langParam) setLang(langParam);
+    if (countryParam) setCountryCode(countryParam);
+    if (nameParam) setCountryName(nameParam);
 
-    const urlOrderId = getQueryParam("orderId");
-    if (urlOrderId) setOrderId(urlOrderId);
-
-    // IP 國別識別（如果沒有參數）
-    if (!urlCountry) {
-      fetch("https://ipapi.co/country/")
-        .then((res) => res.text())
-        .then((code) => setCountry(code.toUpperCase()))
-        .catch(() => {});
+    if (!countryParam) {
+      fetch("https://ipapi.co/json/")
+        .then((res) => res.json())
+        .then((data) => {
+          setCountryCode(data.country || "CN");
+          setCountryName(data.country_name || "中国");
+        });
     }
-
-    // 檢測微信
-    setWechatEnv(isWeChatBrowser());
   }, []);
 
-  const t = i18n[lang];
-
-  const handlePayment = (method: string) => {
-    // 銀行 URL Scheme 支持
-    if (method === "bank") {
-      window.location.href = "bankapp://transfer?orderId=" + orderId;
-      return;
-    }
-    // 跳轉到對應支付頁面
-    window.location.href = `/pay/redirect?orderId=${orderId}&method=${method}&country=${country}&lang=${lang}`;
+  // 按钮样式
+  const buttonStyle = {
+    backgroundColor: BUTTON_COLOR,
+    color: "#fff",
+    padding: "12px 20px",
+    margin: "8px 0",
+    border: "none",
+    borderRadius: "6px",
+    fontSize: "16px",
+    fontWeight: "bold",
+    width: "100%",
+    cursor: "pointer",
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-6">
-      <div className="max-w-md w-full bg-white rounded-2xl shadow-lg p-6 space-y-4">
-        <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold">{t.title}</h1>
-          <select
-            value={lang}
-            onChange={(e) => setLang(e.target.value as "zh" | "en")}
-            className="border rounded-lg px-2 py-1"
-          >
-            <option value="zh">中文</option>
-            <option value="en">English</option>
-          </select>
-        </div>
+    <div style={{ maxWidth: "400px", margin: "0 auto", textAlign: "center", fontFamily: "Arial" }}>
+      {/* 标题区 */}
+      <h2 style={{ fontWeight: "bold", marginBottom: "10px" }}>{labels[lang].title}</h2>
+      <h3 style={{ fontWeight: "bold", marginBottom: "10px" }}>{labels[lang].subtitle}</h3>
+      <p style={{ fontWeight: "bold", marginBottom: "10px" }}>
+        {labels[lang].amount}: CNY {amount}
+      </p>
+      <p style={{ fontWeight: "bold", marginBottom: "20px" }}>
+        {countryCode} {countryName}
+      </p>
 
-        {wechatEnv && (
-          <div className="bg-yellow-100 text-yellow-800 p-3 rounded-lg text-sm">
-            {t.wechatTip}
-          </div>
-        )}
-
-        <div className="space-y-3">
-          <PayButton label={t.bank} onClick={() => handlePayment("bank")} />
-          <PayButton label={t.alipay} onClick={() => handlePayment("alipay")} />
-          <PayButton label={t.wechat} onClick={() => handlePayment("wechat")} />
-          <PayButton label={t.stripe} onClick={() => handlePayment("stripe")} />
-          <PayButton
-            label={`${t.tth} (${country})`}
-            onClick={() => handlePayment("tth")}
-          />
-        </div>
-      </div>
+      {/* 支付按钮 */}
+      <button style={buttonStyle}>{labels[lang].bank}</button>
+      <button style={buttonStyle}>{labels[lang].alipay}</button>
+      <button style={buttonStyle}>{labels[lang].wechat}</button>
+      <button style={buttonStyle}>{labels[lang].stripe}</button>
+      <button style={buttonStyle}>
+        {labels[lang].tth}（{countryCode}）
+      </button>
     </div>
   );
 }
